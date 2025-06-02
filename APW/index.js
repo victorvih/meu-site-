@@ -167,7 +167,7 @@ loginForm.addEventListener('submit', function(event) {
         // Redireciona para a página desejada após um pequeno atraso
         setTimeout(() => {
             // adiciona o diretório da pag lista funcionario
-            window.location.href = 'file:///C:/Users/kaue/Downloads/projeto-crud/lista_funcionario/index.html'; // Ajuste este caminho conforme a sua estrutura de arquivos
+            window.location.href = 'home.html'; 
         }, 500); 
         
     } else {
