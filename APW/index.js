@@ -290,5 +290,52 @@ cadCpfInput.addEventListener('input', function (e) {
     e.target.value = value;
 });
 
+// index.js
 
+document.getElementById('loginForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
 
+    const users = JSON.parse(localStorage.getItem('users')) || [];
+
+    const user = users.find(u => u.email === email && u.password === password);
+
+    if (user) {
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        alert("Login realizado com sucesso!");
+        window.location.href = 'teste.html';
+    } else {
+        document.getElementById('loginMessage').style.display = 'block';
+    }
+});
+
+document.getElementById('registerForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const name = document.getElementById('registerName').value;
+    const email = document.getElementById('registerEmail').value;
+    const cpf = document.getElementById('cad-cpf').value;
+    const birthdate = document.getElementById('cad-dataNasc').value;
+    const password = document.getElementById('registerPassword').value;
+
+    if (!name || !email || !password) {
+        document.getElementById('error-message').textContent = "Preencha todos os campos";
+        return;
+    }
+
+    const users = JSON.parse(localStorage.getItem('users')) || [];
+
+    const userExists = users.some(u => u.email === email);
+
+    if (userExists) {
+        document.getElementById('error-message').textContent = "Este e-mail já está cadastrado.";
+        return;
+    }
+
+    users.push({ name, email, cpf, birthdate, password });
+    localStorage.setItem('users', JSON.stringify(users));
+
+    alert("Cadastro realizado com sucesso!");
+    document.getElementById('error-message').textContent = "";
+    document.getElementById('registerForm').reset();
+});

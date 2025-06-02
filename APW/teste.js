@@ -18,7 +18,7 @@ function runTest() {
 
 async function getMatchingBreeds(userPrefs) {
     const url = 'https://api.thedogapi.com/v1/breeds'; 
-    const apiKey = 'live_3JFxMfYR6dL0NihqBPYZtHRi6vPjCFsbXXZ722q2UZ0SLeI93xjbnR0HvqrTvtWo'; // Substitua pela sua chave real
+    const apiKey = 'live_3JFxMfYR6dL0NihqBPYZtHRi6vPjCFsbXXZ722q2UZ0SLeI93xjbnR0HvqrTvtWo';
 
     try {
         const response = await fetch(url, {
@@ -42,36 +42,27 @@ async function getMatchingBreeds(userPrefs) {
         const matches = breeds.map(breed => {
             let matchCount = 0;
 
-            // Tamanho (inferido pela altura)
             const height = parseInt(breed.height?.metric.split(' ')[0]) || 0;
             const inferredSize = height < 40 ? 'Small' : height <= 60 ? 'Medium' : 'Large';
             if (userPrefs.size && inferredSize === userPrefs.size) matchCount += 1;
 
-            // Temperamento
             if (userPrefs.temperament && breed.temperament && breed.temperament.toLowerCase().includes(userPrefs.temperament.toLowerCase())) {
                 matchCount += 1;
             }
 
-            // Expectativa de vida
             if (userPrefs.life_span && breed.life_span && breed.life_span.includes(userPrefs.life_span)) {
                 matchCount += 1;
             }
 
-            // Origem
             if (userPrefs.origin && breed.origin && breed.origin.toLowerCase().includes(userPrefs.origin.toLowerCase())) {
                 matchCount += 1;
             }
 
-            // Peso
             if (userPrefs.weight) {
                 const avgWeight = parseFloat(breed.weight?.metric.split(' - ')[0]);
                 const [min, max] = userPrefs.weight.split(' - ').map(parseFloat);
-                if (!isNaN(avgWeight)) {
-                    if ((min && !max && avgWeight <= min) ||
-                        (min && max && avgWeight >= min && avgWeight <= max) ||
-                        (max && !min && avgWeight >= max)) {
-                        matchCount += 1;
-                    }
+                if ((avgWeight >= min) && (max ? avgWeight <= max : true)) {
+                    matchCount += 1;
                 }
             }
 
@@ -79,7 +70,7 @@ async function getMatchingBreeds(userPrefs) {
         })
         .filter(breed => breed.matchCount > 0)
         .sort((a, b) => b.matchCount - a.matchCount)
-        .slice(0, 5); // Top 5 resultados
+        .slice(0, 10); // Mostra até 10 raças
 
         displayResults(matches);
 
@@ -88,39 +79,6 @@ async function getMatchingBreeds(userPrefs) {
         alert("Ocorreu um erro ao carregar as raças.");
         showFallbackBreeds();
     }
-}
-
-// Função para traduzir temperamento para o português
-function translateTemperament(temperament) {
-    if (!temperament) return 'Não informado';
-
-    const temperamentMap = {
-        'friendly': 'Amigável',
-        'loyal': 'Leal',
-        'intelligent': 'Inteligente',
-        'energetic': 'Energético',
-        'calm': 'Calmo',
-        'playful': 'Brincalhão',
-        'gentle': 'Gentil',
-        'alert': 'Alerta',
-        'watchful': 'Vigilante',
-        'independent': 'Independente',
-        'docile': 'Dócil',
-        'active': 'Ativo',
-        'trainable': 'Treinável',
-        'protective': 'Protetor',
-        'affectionate': 'Afetuoso',
-        'courageous': 'Corajoso',
-        'bold': 'Destemido',
-        'cautious': 'Cauteloso',
-        'sensitive': 'Sensível'
-    };
-
-    // Divide os temperamentos e traduz cada um
-    return temperament
-        .split(', ')
-        .map(temp => temperamentMap[temp.toLowerCase()] || temp)
-        .join(', ');
 }
 
 function displayResults(results) {
@@ -152,12 +110,15 @@ function displayResults(results) {
                 <h5 class="card-title">${breed.name}</h5>
                 <p class="card-text">
                     <strong>Tamanho estimado:</strong> ${getInferredSize(breed)}<br>
-                    <strong>Temperamento:</strong> ${translateTemperament(breed.temperament) || 'Não informado'}<br>
+                    <strong>Temperamento:</strong> ${translateTemperament(breed.temperament)}<br>
                     <strong>Origem:</strong> ${breed.origin || 'Não informado'}<br>
                     <strong>Peso:</strong> ${breed.weight?.metric || 'Não informado'}<br>
                     <strong>Esperança de vida:</strong> ${breed.life_span || 'Não informado'}<br>
                     <strong>Compatibilidade:</strong> ${breed.matchCount}/5 critérios batem
                 </p>
+                <button class="btn btn-outline-success btn-favorite" onclick="toggleFavorite('${breed.name}', '${breed.image?.url}', '${breed.id}')">
+                    ❤️ Pimpolho
+                </button>
             </div>
         `;
         resultsContainer.appendChild(div);
@@ -165,35 +126,97 @@ function displayResults(results) {
 }
 
 function getInferredSize(breed) {
-    const height = parseInt(breed.height?.metric.split(' ')[0]);
-    if (!height) return 'Não informado';
+    const height = parseInt(breed.height?.metric.split(' ')[0]) || 0;
     if (height < 40) return 'Pequeno';
     if (height <= 60) return 'Médio';
     return 'Grande';
 }
 
-function showFallbackBreeds() {
-    const fallbackBreeds = [
-        { name: "Golden Retriever", image: "https://images.dog.ceo/breeds/retriever-golden/n02099601_6125.jpg"  },
-        { name: "Labrador Retriever", image: "https://images.dog.ceo/breeds/labrador/n02099712_6511.jpg"  },
-        { name: "Poodle", image: "https://images.dog.ceo/breeds/poodle-standard/n02113712_3204.jpg"  },
-        { name: "Beagle", image: "https://images.dog.ceo/breeds/beagle/n02088466_9748.jpg"  },
-        { name: "Bulldog Francês", image: "https://images.dog.ceo/breeds/bulldog-french/n02099267_3732.jpg"  }
-    ];
+function translateTemperament(temperament) {
+    if (!temperament) return 'Não informado';
 
-    fallbackBreeds.forEach(breed => {
+    const temperamentMap = {
+        'friendly': 'Amigável',
+        'loyal': 'Leal',
+        'intelligent': 'Inteligente',
+        'energetic': 'Energético',
+        'calm': 'Calmo',
+        'playful': 'Brincalhão',
+        'gentle': 'Gentil',
+        'alert': 'Alerta',
+        'watchful': 'Vigilante',
+        'independent': 'Independente',
+        'docile': 'Dócil',
+        'active': 'Ativo',
+        'trainable': 'Treinável',
+        'protective': 'Protetor',
+        'affectionate': 'Afetuoso'
+    };
+
+    if (!temperament) return 'Não informado';
+
+    return temperament
+        .split(', ')
+        .map(temp => temperamentMap[temp.toLowerCase()] || temp)
+        .join(', ');
+}
+
+function toggleFavorite(name, imageUrl, id) {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+    if (!currentUser) {
+        alert("Você precisa estar logado para guardar uma raça como Pimpolho.");
+        window.location.href = 'index.html'; // Redireciona para login
+        return;
+    }
+
+    let favorites = JSON.parse(localStorage.getItem('favorites') || '{}');
+
+    if (!favorites[currentUser.email]) {
+        favorites[currentUser.email] = [];
+    }
+
+    const existing = favorites[currentUser.email].find(fav => fav.id === id);
+
+    if (existing) {
+        // Remove se já está favoritado
+        favorites[currentUser.email] = favorites[currentUser.email].filter(fav => fav.id !== id);
+        alert(`${name} removido dos favoritos.`);
+    } else {
+        // Adiciona como favorito
+        favorites[currentUser.email].push({ name, imageUrl, id });
+        alert(`${name} adicionado aos favoritos!`);
+    }
+
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+}
+
+function displayFavorites() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    const container = document.getElementById('favoritesContainer');
+
+    if (!container || !currentUser) return;
+
+    const favorites = JSON.parse(localStorage.getItem('favorites') || '{}')[currentUser.email];
+
+    if (!favorites || favorites.length === 0) {
+        container.innerHTML = '<p>Você ainda não tem raças favoritas.</p>';
+        return;
+    }
+
+    container.innerHTML = '';
+    favorites.forEach(fav => {
         const div = document.createElement('div');
-        div.className = 'card mb-4 shadow-sm';
-
+        div.className = 'card mb-3 shadow-sm';
         div.innerHTML = `
-            <img src="${breed.image}" class="card-img-top" alt="${breed.name}">
+            <img src="${fav.imageUrl}" class="card-img-top" alt="${fav.name}">
             <div class="card-body">
-                <h5 class="card-title">${breed.name}</h5>
+                <h5 class="card-title">${fav.name}</h5>
                 <p class="card-text">
-                    Uma das raças mais populares do mundo. Amigável, inteligente e fácil de treinar.
+                    <small class="text-muted">Raça favorita</small>
                 </p>
             </div>
         `;
-        document.getElementById('results').appendChild(div);
+        container.appendChild(div);
     });
 }
